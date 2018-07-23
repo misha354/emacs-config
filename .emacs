@@ -5,21 +5,44 @@
 (package-initialize)
 
 
-(setq enable-common-lisp t) ; requires sbcl
-(setq enable-scheme t) ; you'll want either racket, chicken, etc installed
+
+; requires sbcl
+;(setq enable-common-lisp t) 
+
+;you'll want either racket, chicken, etc installed
+;(setq enable-scheme t) 
 
 ;;;; PACKAGE MANAGEMENT
 ;;package repos
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 
-(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
+;(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
 
 ;; this installs use-package if it's not present (i.e. clean installs)
+
+(setq package-list '(spacemacs-theme ansible neotree))
+
+; fetch the list of packages available
+(unless package-archive-contents
+    (package-refresh-contents))
+
+; install the missing packages
+(dolist (package package-list)
+  (unless (package-installed-p package)
+        (package-install package)))
+
+; use package
 (if (not (package-installed-p 'use-package))
     (progn
       (package-refresh-contents)
       (package-install 'use-package)))
+
+;;;; magit
+(use-package magit
+  :ensure t
+  :defer t
+  :bind (("C-x g" . magit-status)))
 
 ;;;; SYSTEM OVERRIDES
 ;; no splash intro
@@ -86,29 +109,30 @@
 
 
 ;; Common Lisp
-(if enable-common-lisp
-    (progn
-      (use-package paredit
-	:ensure t)
-      (use-package slime
-	:ensure t)    
-      (add-hook 'slime-mode-hook
-		'(lambda ()
-		   (paredit-mode t)
-		   (setq inferior-lisp-program (locate-file "sbcl" exec-path))
-		   (setq slime-controls '(slime-fancy))))))
+;(if enable-common-lisp
+;    (progn
+;      (use-package paredit
+;	:ensure t)
+;      (use-package slime
+;	:ensure t)    
+;      (add-hook 'slime-mode-hook
+;		'(lambda ()
+;		   (paredit-mode t)
+;		   (setq inferior-lisp-program (locate-file "sbcl" exec-path))
+;		   (setq slime-controls '(slime-fancy))))))
+
 ;; Scheme
-(if enable-scheme
-    (progn
-      (use-package geiser
-	:ensure t)
-      (use-package ac-geiser
-	:ensure t)
-      (add-hook 'geiser-mode-hook 'ac-geiser-setup)
-      (add-hook 'geiser-repl-mode-hook
-		'(lambda ()
-			(ac-geiser-setup)
-			(add-to-list 'ac-modes 'geiser-repl-mode)))))
+;(if enable-scheme
+;    (progn
+;      (use-package geiser
+;	:ensure t)
+;      (use-package ac-geiser
+;	:ensure t)
+;      (add-hook 'geiser-mode-hook 'ac-geiser-setup)
+;      (add-hook 'geiser-repl-mode-hook
+;		'(lambda ()
+;			(ac-geiser-setup)
+;			(add-to-list 'ac-modes 'geiser-repl-mode)))))
 
 (use-package rust-mode
   :ensure t)
@@ -184,19 +208,19 @@
 
 (setq auto-mode-alist (delete (rassq 'git-rebase-mode auto-mode-alist) auto-mode-alist))
 
-(defun interprogram-paste-function () ; Interactive version
-  "Paste from OS clipboard"
-  (interactive nil)
-  (shell-command-to-string "pbpaste"))
+;(defun interprogram-paste-function () ; Interactive version
+;  "Paste from OS clipboard"
+;  (interactive nil)
+;  (shell-command-to-string "pbpaste"))
 
-(defun interprogram-cut-function (text &optional push)
-  "Copy to OS clipboard"
-  (interactive "p")
-  (let ((process-connection-type nil))
-    (let ((proc (start-process "pbcopy" "*Messages*" "pbcopy")))
-      (process-send-string proc text)
-      (process-send-eof proc))))
+;(defun interprogram-cut-function (text &optional push)
+;  "Copy to OS clipboard"
+;  (interactive "p")
+;  (let ((process-connection-type nil))
+;    (let ((proc (start-process "pbcopy" "*Messages*" "pbcopy")))
+;      (process-send-string proc text)
+;      (process-send-eof proc))));
 
-(global-set-key (kbd "C-c C-c") 'interprogram-cut-function)
-(global-set-key (kbd "C-c C-y") 'interprogram-paste-function)
+;(global-set-key (kbd "C-c C-c") 'interprogram-cut-function)
+;(global-set-key (kbd "C-c C-y") 'interprogram-paste-function)
 
