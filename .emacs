@@ -4,8 +4,6 @@
 ;; You may delete these explanatory comments.
 (package-initialize)
 
-
-
 ; requires sbcl
 ;(setq enable-common-lisp t) 
 
@@ -16,12 +14,9 @@
 ;;package repos
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
 
-;(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
-
-;; this installs use-package if it's not present (i.e. clean installs)
-
-(setq package-list '(spacemacs-theme ansible neotree))
+(setq package-list '(use-package spacemacs-theme ansible neotree pbcopy))
 
 ; fetch the list of packages available
 (unless package-archive-contents
@@ -31,18 +26,6 @@
 (dolist (package package-list)
   (unless (package-installed-p package)
         (package-install package)))
-
-; use package
-(if (not (package-installed-p 'use-package))
-    (progn
-      (package-refresh-contents)
-      (package-install 'use-package)))
-
-;;;; magit
-(use-package magit
-  :ensure t
-  :defer t
-  :bind (("C-x g" . magit-status)))
 
 ;;;; SYSTEM OVERRIDES
 ;; no splash intro
@@ -80,7 +63,15 @@
   :ensure t
   :init (setq org-todo-keywords
 	      '((sequence "TODO(t)" "CURRENT(c!)" "HOLD(h@/!)" "WAIT(w@/!)" "|" "DONE(d!)" "CANCELED(x@/!)"))))
+ (global-set-key (kbd "C-x c") 'helm-apropos)
 
+;;;; magit - version control
+(use-package magit
+  :ensure t
+  :defer t
+  :bind (("C-x g" . magit-status)))
+
+;; YAML
 (use-package yaml-mode
   :ensure t)
 
@@ -93,20 +84,22 @@
 (use-package company
   :ensure t ; start company-mode completion in all but php buffers
   :init (global-company-mode t) (setq company-global-modes '(not php-mode)))
+(use-package yasnippet
+  :ensure t
+  :init
+    (yas-global-mode 1))
+(use-package flycheck
+  :ensure t
+  :init (global-flycheck-mode))
 
 ;; HTML
 (use-package company-web
   :ensure t)
 
-(use-package yasnippet
-  :ensure t
-  :init
-    (yas-global-mode 1))
-
-;; ansible mode
+;; Ansible
 (use-package ansible
   :init (add-hook 'yaml-mode-hook '(lambda () (ansible 1))))
-
+(add-to-list 'company-backends 'company-ansible)
 
 ;; Common Lisp
 ;(if enable-common-lisp
@@ -134,6 +127,7 @@
 ;			(ac-geiser-setup)
 ;			(add-to-list 'ac-modes 'geiser-repl-mode)))))
 
+; Rust
 (use-package rust-mode
   :ensure t)
 (use-package flycheck-rust
@@ -157,14 +151,12 @@
  ;; If there is more than one, they won't work right.
  )
 
-(use-package flycheck
-  :ensure t
-  :init (global-flycheck-mode))
-
+; Convenience settings
 (save-place-mode 1) 
 (global-linum-mode 1)
 (setq column-number-mode t)
 (setq large-file-warning-threshold nil)
+(put 'upcase-region 'disabled nil)
 
 ;; Store backups in /tmp
 (setq backup-directory-alist
@@ -172,17 +164,21 @@
 (setq auto-save-file-name-transforms
       `((".*" ,temporary-file-directory t)))
 
+; Bind Ctrl-l to compile command
 (add-hook 'c-mode-common-hook 
           (lambda () (define-key c-mode-base-map (kbd "C-c C-l") 'compile)))
 
+; A ctags work-around (https://github.com/leoliu/ggtags/issues/88)
 (define-key global-map "\M-*" 'pop-tag-mark)
 
+; Text file settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
-
+(setq sentence-end-double-space nil)
 (setq-default fill-column 80)
-(put 'upcase-region 'disabled nil)
 
 
+
+; Show file tree on the left
 (defun neotree-startup ()
   (interactive)
   (neotree-show)
@@ -194,33 +190,10 @@
 )
 
 
-(add-to-list 'company-backends 'company-ansible)
-
-
-(setq sentence-end-double-space nil)
-
- (global-set-key (kbd "C-x c") 'helm-apropos)
-
-;;(setq helm-google-suggest-use-curl-p t)
-
-;;; .emacs ends here
-
 
 (setq auto-mode-alist (delete (rassq 'git-rebase-mode auto-mode-alist) auto-mode-alist))
 
-;(defun interprogram-paste-function () ; Interactive version
-;  "Paste from OS clipboard"
-;  (interactive nil)
-;  (shell-command-to-string "pbpaste"))
+(setq-default neo-show-hidden-files t)
 
-;(defun interprogram-cut-function (text &optional push)
-;  "Copy to OS clipboard"
-;  (interactive "p")
-;  (let ((process-connection-type nil))
-;    (let ((proc (start-process "pbcopy" "*Messages*" "pbcopy")))
-;      (process-send-string proc text)
-;      (process-send-eof proc))));
-
-;(global-set-key (kbd "C-c C-c") 'interprogram-cut-function)
-;(global-set-key (kbd "C-c C-y") 'interprogram-paste-function)
+(turn-on-pbcopy)
 
