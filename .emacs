@@ -1,4 +1,4 @@
-;; Aded by Package.el.  This must come before configurations of
+;; Added by Package.el.  This must come before configurations of
 ;; installed packages.  Don't delete this line.  If you don't want it,
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
@@ -71,6 +71,7 @@
 	    (lambda ()
 	      (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
 		(ggtags-mode 1))))
+  (setq ggtags-global-ignore-case t)
   )
 (global-set-key (kbd "C-x r") 'ggtags-find-tag-regexp)
 (setq load-path (cons "/usr/local/bin/gtags" load-path))
@@ -80,7 +81,6 @@
             (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
               (ggtags-mode 1))))
 
-(defalias 'perl-mode 'cperl-mode)
 (add-hook 'cperl-mode-hook 'ggtags-mode)
 (add-hook 'python-mode-hook 'ggtags-mode)
 
@@ -142,6 +142,7 @@
       (add-to-list 'interpreter-mode-alist (cons interpreter 'cperl-mode))))
 
 (global-set-key "\M-p" 'cperl-perldoc) ; alt-p
+(defalias 'perl-mode 'cperl-mode)
 
 (require 'pod-mode)
 (add-to-list 'auto-mode-alist
@@ -247,7 +248,7 @@
        (buffer (generate-new-buffer "untitled"))
        (full_path (file-truename (buffer-file-name)))
        (path (substring full_path (length (projectile-project-root)) nil))
-       (remote_path (concat "hostname@address:path/" path))
+       (remote_path (concat "vagrant@web4-01-freebsd:/home/htdocs/pplus/" path))
        (args `(,full_path ,remote_path)))
 
   (progn 
