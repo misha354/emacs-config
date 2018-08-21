@@ -1,14 +1,8 @@
-;; Added by Package.el.  This must come before configurations of
+;; Aded by Package.el.  This must come before configurations of
 ;; installed packages.  Don't delete this line.  If you don't want it,
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
 (package-initialize)
-
-; requires sbcl
-;(setq enable-common-lisp t) 
-
-;you'll want either racket, chicken, etc installed
-;(setq enable-scheme t) 
 
 ;;;; PACKAGE MANAGEMENT
 ;;package repos
@@ -33,36 +27,31 @@
 ;;let emacs use plenty of memory
 (setq gc-cons-threshold 100000000)
 
+
 ;;;; USER SETTINGS
-;; theme - monokia is dark, like Sublime. Leuven is light. uncomment what you'd like to use,
-;; or find more at https://pawelbx.github.io/emacs-theme-gallery/
-;(use-package monokai-theme
-;  :ensure t
-;  :init (load-theme 'monokai t))
-
-;(use-package leuven-theme
-;  :ensure t
-;  :init (load-theme 'leuven t))
-
 (use-package spacemacs-theme
   :defer t
   :init (load-theme 'spacemacs-dark t))
 
+(use-package pod-mode
+  :ensure t)
 
-;; project management
+;; GENERIC PACKAGES
+
+; project management
 (use-package projectile
   :ensure t
   :init (projectile-mode t))
+
+; emacs auto-completion
 (use-package ido
   :ensure t
   :init (ido-mode t) (ido-everywhere t))
+
+; emacs autocompletion
 (use-package helm
   :ensure t
   :init (helm-mode t))
-(use-package org
-  :ensure t
-  :init (setq org-todo-keywords
-	      '((sequence "TODO(t)" "CURRENT(c!)" "HOLD(h@/!)" "WAIT(w@/!)" "|" "DONE(d!)" "CANCELED(x@/!)"))))
  (global-set-key (kbd "C-x c") 'helm-apropos)
 
 ;;;; magit - version control
@@ -71,19 +60,47 @@
   :defer t
   :bind (("C-x g" . magit-status)))
 
-;; YAML
-(use-package yaml-mode
-  :ensure t)
+; Don't start magit if trying to rebase from command line
+(setq auto-mode-alist (delete (rassq 'git-rebase-mode auto-mode-alist) auto-mode-alist))
 
-;; code editing
+;; tags for code navigation
+(use-package ggtags
+  :ensure t
+  :config 
+  (add-hook 'c-mode-common-hook
+	    (lambda ()
+	      (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+		(ggtags-mode 1))))
+  )
+(global-set-key (kbd "C-x r") 'ggtags-find-tag-regexp)
+(setq load-path (cons "/usr/local/bin/gtags" load-path))
+; allow code navigation for different langauges
+(add-hook 'c-mode-common-hook
+          (lambda ()
+            (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+              (ggtags-mode 1))))
+
+(defalias 'perl-mode 'cperl-mode)
+(add-hook 'cperl-mode-hook 'ggtags-mode)
+(add-hook 'python-mode-hook 'ggtags-mode)
+
+
+;; productivity
+(use-package org
+  :ensure t
+  :init (setq org-todo-keywords
+	      '((sequence "TODO(t)" "CURRENT(c!)" "HOLD(h@/!)" "WAIT(w@/!)" "|" "DONE(d!)" "CANCELED(x@/!)"))))
+
+
+;; CODE EDITING
 (use-package smartparens
   :ensure t
   :init (smartparens-global-mode 1))
 (use-package flyspell
   :ensure t)
 (use-package company
-  :ensure t ; start company-mode completion in all but php buffers
-  :init (global-company-mode t) (setq company-global-modes '(not php-mode)))
+  :ensure t 
+  :init (global-company-mode t) )
 (use-package yasnippet
   :ensure t
   :init
@@ -92,14 +109,45 @@
   :ensure t
   :init (global-flycheck-mode))
 
+;; LANGUAGE SUPPORT
+
 ;; HTML
 (use-package company-web
   :ensure t)
 
-;; Ansible
-(use-package ansible
-  :init (add-hook 'yaml-mode-hook '(lambda () (ansible 1))))
-(add-to-list 'company-backends 'company-ansible)
+;; Mason
+(use-package mmm-mode
+  :ensure t)
+
+(require 'mmm-auto)
+(setq mmm-global-mode 'maybe)
+(add-to-list 'auto-mode-alist '("\\(auto\\|d\\)handler\\'" . html-mode))
+(mmm-add-mode-ext-class 'html-mode nil 'mason)
+(add-to-list 'auto-mode-alist '("\\.mc\\'" . html-mode))
+(mmm-add-mode-ext-class 'html-mode "\\.mc\\'" 'mason)
+
+;; YAML
+(use-package yaml-mode
+  :ensure t)
+
+;Perl 
+(load-library "cperl-mode")
+  (add-to-list 'auto-mode-alist '("\\\\.[Pp][LlMm][Cc]?$" . cperl-mode))
+  (while (let ((orig (rassoc 'perl-mode auto-mode-alist)))
+              (if orig (setcdr orig 'cperl-mode))))
+  (while (let ((orig (rassoc 'perl-mode interpreter-mode-alist)))
+           (if orig (setcdr orig 'cperl-mode))))
+  (dolist (interpreter '("perl" "perl5" "miniperl" "pugs"))
+    (unless (assoc interpreter interpreter-mode-alist)
+      (add-to-list 'interpreter-mode-alist (cons interpreter 'cperl-mode))))
+
+(global-set-key "\M-p" 'cperl-perldoc) ; alt-p
+
+(require 'pod-mode)
+(add-to-list 'auto-mode-alist
+  '("\\.pod$" . pod-mode))
+
+(setq cperl-electric-keywords t)
 
 ;; Common Lisp
 ;(if enable-common-lisp
@@ -136,20 +184,6 @@
 	  (flycheck-rust-setup)
 	  (flycheck-mode)))
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (pbcopy ansible company-ansible neotree magit company-erlang company-web web-mode vue-mode visual-regexp undo-tree tabbar smex smartparens slime rust-mode paredit monokai-theme jedi ivy ido-ubiquitous icicles helm-swoop ggtags geiser geben-helm-projectile flycheck-rust direx dired+ company-php ac-python ac-php))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 
 ; Convenience settings
 (save-place-mode 1) 
@@ -158,24 +192,28 @@
 (setq large-file-warning-threshold nil)
 (put 'upcase-region 'disabled nil)
 
+ (global-set-key (kbd "C-c m") 'menu-bar-open)
+
+; Bind Ctrl+c-c to compile command
+(add-hook 'c-mode-common-hook 
+          (lambda () (define-key c-mode-base-map (kbd "C-c c") 'compile)))
+
 ;; Store backups in /tmp
 (setq backup-directory-alist
       `((".*" . ,temporary-file-directory)))
 (setq auto-save-file-name-transforms
       `((".*" ,temporary-file-directory t)))
 
-; Bind Ctrl-l to compile command
-(add-hook 'c-mode-common-hook 
-          (lambda () (define-key c-mode-base-map (kbd "C-c C-l") 'compile)))
-
-; A ctags work-around (https://github.com/leoliu/ggtags/issues/88)
-(define-key global-map "\M-*" 'pop-tag-mark)
 
 ; Text file settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
 (setq sentence-end-double-space nil)
 (setq-default fill-column 80)
 
+
+
+; Random package configurations
+(turn-on-pbcopy)
 
 
 ; Show file tree on the left
@@ -188,12 +226,53 @@
     (add-hook 'server-switch-hook #'neotree-startup)
   (add-hook 'after-init-hook #'neotree-startup)
 )
-
-
-
-(setq auto-mode-alist (delete (rassq 'git-rebase-mode auto-mode-alist) auto-mode-alist))
-
 (setq-default neo-show-hidden-files t)
 
-(turn-on-pbcopy)
 
+(global-set-key "\M-o" 'ace-window) ; alt-o
+
+; Custom code
+(defun show-file-name ()
+  "Show the full path file name in the minibuffer."
+  (interactive)
+  (message (buffer-file-name))
+  (kill-new (file-truename buffer-file-name))
+)
+(global-set-key "\C-cz" 'show-file-name)
+
+
+(defun scp()
+(interactive)
+(let* (
+       (buffer (generate-new-buffer "untitled"))
+       (full_path (file-truename (buffer-file-name)))
+       (path (substring full_path (length (projectile-project-root)) nil))
+       (remote_path (concat "hostname@address:path/" path))
+       (args `(,full_path ,remote_path)))
+
+  (progn 
+    (with-output-to-temp-buffer "tester"
+      (print remote_path)
+      )	
+    (apply 'start-process "scp" "tester" "scp" args)       
+   )
+
+;args
+))
+
+(global-set-key (kbd "C-c s") 'scp)
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (firestarter ace-window pbcopy ansible company-ansible neotree magit company-erlang company-web web-mode vue-mode visual-regexp undo-tree tabbar smex smartparens slime rust-mode paredit monokai-theme jedi ivy ido-ubiquitous icicles helm-swoop ggtags geiser geben-helm-projectile flycheck-rust direx dired+ company-php ac-python ac-php))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
